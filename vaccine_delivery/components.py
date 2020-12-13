@@ -93,7 +93,9 @@ class bellman_agent():
             for i in range(self.V.shape[0]):
                 for j in range(self.V.shape[1]):
                     v_old = self.V[i, j]
-                    self.V[i, j] = self.expected_reward((i, j), self.policy[i,j], self.V, arrival_distribution)
+                    self.V[i, j] = self.expected_reward(
+                        (i, j), self.policy[i,j], self.V, arrival_distribution
+                    )
                     delta = max([delta, np.abs(v - self.V[i, j])])
 
     def policy_improvement(self, arrival_distribution):
@@ -103,7 +105,9 @@ class bellman_agent():
                 old_policy = self.policy[i, j]
                 action_rewards = np.zeros((max_delivery+1))
                 for delivery in range(max_delivery+1):
-                    action_rewards[delivery] += self.expected_reward((i, j), old_policy, self.V, arrival_distribution)
+                    action_rewards[delivery] += self.expected_reward(
+                        (i, j), old_policy, self.V, arrival_distribution
+                    )
                 self.policy[i, j] = int(np.argmax(action_rewards))
                 if is_policy_stable and (old_policy != self.policy[i, j]):
                     is_policy_stable = False
