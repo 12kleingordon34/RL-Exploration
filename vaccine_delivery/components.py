@@ -112,7 +112,7 @@ class bellman_agent():
                 action_rewards = np.zeros((self.max_delivery+1))
                 centre.reset((i, j))
                 for delivery in range(self.max_delivery+1):
-                    action_rewards[delivery] += self.expected_reward(
+                    action_rewards[delivery] = self.expected_reward(
                         centre, old_policy, self.V, arrival_distribution
                     )
                 self.policy[i, j] = int(np.argmax(action_rewards))
