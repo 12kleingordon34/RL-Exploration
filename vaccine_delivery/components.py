@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from scipy.stats import poisson
 
 
@@ -38,6 +38,7 @@ class drug_centre():
         elif patient_no < (self.old_vaccines + self.new_vaccines):
             patients_treated = patient_no
             patient_no -= self.old_vaccines
+            self.old_vaccines = 0
             self.new_vaccines -= patient_no
             self.last_step_treated = patients_treated
         else:
@@ -55,7 +56,7 @@ class drug_centre():
 
 
     def get_state(self):
-        return (self.new_vaccines, self.old_vaccines)
+        return (int(self.new_vaccines), int(self.old_vaccines))
 
 
     def reset(self, state):
@@ -69,21 +70,25 @@ class truncated_patient_arrival_distribution():
     def __init__(self, max_arrivals, rate):
         self.rate = rate
         self.max_arrivals = max_arrivals
+        self.dist = poisson.pmf(np.arange(0, self.max_arrivals+1, 1), mu=self.rate)
+        self.dist = self.dist / self.dist.sum()
 
-    def call(self):
-        dist = poisson.pmf(np.arange(0, max_arrivals+1, 1), mu=rate)
-        dist = dist / dist.sum()
-        return dist
-
-
+    def call(self, num_arrivals):
+        assert num_arrivals >= 0
+        if 0 <= num_arrivals <= self.max_arrivals:
+            return self.dist[num_arrivals]
+        else:
+            return 0
 
 
 class bellman_agent():
-    def __init(self, max_vax, max_delivery):
+    def __init__(self, max_vax, max_delivery):
         self.V = np.zeros((max_vax+1, max_vax+1))
         self.policy = np.ones((max_vax+1, max_vax+1))
+        self.max_vax = max_vax
+        self.max_delivery = max_delivery
 
-    def policy_evaluation(self, drug_centre, arrival_distribution):
+    def policy_evaluation(self, centre, arrival_distribution):
         """
         i.e. Prediction
         """
@@ -93,39 +98,40 @@ class bellman_agent():
             for i in range(self.V.shape[0]):
                 for j in range(self.V.shape[1]):
                     v_old = self.V[i, j]
+                    centre.reset((i, j))
                     self.V[i, j] = self.expected_reward(
-                        (i, j), self.policy[i,j], self.V, arrival_distribution
+                        centre, self.policy[i,j], self.V, arrival_distribution
                     )
                     delta = max([delta, np.abs(v - self.V[i, j])])
 
-    def policy_improvement(self, arrival_distribution):
+    def policy_improvement(self, centre, arrival_distribution):
         is_policy_stable = True
         for i in range(self.V.shape[0]):
             for j in range(self.V.shape[1]):
                 old_policy = self.policy[i, j]
-                action_rewards = np.zeros((max_delivery+1))
-                for delivery in range(max_delivery+1):
+                action_rewards = np.zeros((self.max_delivery+1))
+                centre.reset((i, j))
+                for delivery in range(self.max_delivery+1):
                     action_rewards[delivery] += self.expected_reward(
-                        (i, j), old_policy, self.V, arrival_distribution
+                        centre, old_policy, self.V, arrival_distribution
                     )
                 self.policy[i, j] = int(np.argmax(action_rewards))
                 if is_policy_stable and (old_policy != self.policy[i, j]):
                     is_policy_stable = False
 
     @staticmethod
-    def expected_reward(drug_centre, action, V, dist):
+    def expected_reward(centre, action, V, dist):
         global DISCOUNT
 
-        max_arrivals = dist.max_arrivals
-        old_state = drug_centre.get_state()
+        old_state = centre.get_state()
         V_s = 0
-        for patient_no in range(max_arrivals+1):
-            drug_centre.reset(old_state)
-            drug_centre.delivery(action)
+        for patient_no in range(dist.max_arrivals+1):
+            centre.reset(old_state)
+            centre.delivery(action)
             prob = dist.call(patient_no)
-            drug_centre.treat_patients(patient_no)
-            new_state = drug_centre.get_state()
-            reward = drug_centre.get_reward()
+            centre.treat_patients(patient_no)
+            new_state = centre.get_state()
+            reward = centre.get_reward()
 
             V_s += prob * (reward + DISCOUNT * V[new_state[0], new_state[1]])
         return V_s
