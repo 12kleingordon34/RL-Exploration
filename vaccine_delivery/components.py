@@ -4,6 +4,7 @@ from scipy.stats import poisson
 
 DISCOUNT = 0.99
 
+#test
 
 class drug_centre():
     def __init__(self, cost_vaccine, fee_vaccine, state=(0,0)):
@@ -138,4 +139,3 @@ class bellman_agent():
 
             V_s += prob * (reward + DISCOUNT * V[new_state[0], new_state[1]])
         return V_s
-
