@@ -4,7 +4,7 @@ from scipy.stats import poisson
 
 DISCOUNT = 0.99
 
-#test
+#test 2
 
 class drug_centre():
     def __init__(self, cost_vaccine, fee_vaccine, state=(0,0)):
