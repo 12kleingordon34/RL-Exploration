@@ -97,17 +97,19 @@ class bellman_agent():
         """
         error = 0.01
         delta = 0
-        while delta > error:
-            for i in range(self.V.shape[0]):
-                for j in range(self.V.shape[1]):
-                    v_old = self.V[i, j]
-                    centre.reset((i, j))
-                    print("pi(s) = {}, E[r] = {}".format(delivery, self.expected_reward(
-                        centre, self.policy[i,j], self.V, arrival_distribution)))
-                    self.V[i, j] = self.expected_reward(
-                        centre, self.policy[i,j], self.V, arrival_distribution
-                    )
-                    delta = max([delta, np.abs(v_old - self.V[i, j])])
+
+        for i in range(self.V.shape[0]):
+            for j in range(self.V.shape[1]):
+                v_old = self.V[i, j]
+                centre.reset((i, j))
+                print("pi(s) = {}, E[r] = {}".format(delivery, self.expected_reward(
+                    centre, self.policy[i,j], self.V, arrival_distribution)))
+                self.V[i, j] = self.expected_reward(
+                    centre, self.policy[i,j], self.V, arrival_distribution
+                )
+                delta = max([delta, np.abs(v_old - self.V[i, j])])
+                if delta < error:
+                    break
 
     def policy_improvement(self, centre, arrival_distribution):
         is_policy_stable = True
