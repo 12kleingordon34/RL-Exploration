@@ -91,7 +91,7 @@ class bellman_agent():
         self.is_policy_stable = False
         self.actions = np.arange(0, max_delivery+1)
 
-    def policy_evaluation(self, centre, arrival_distribution):
+    def policy_evaluation(self, centre, arrival_distribution, verbose=False):
         """
         i.e. Prediction
         """
@@ -102,8 +102,9 @@ class bellman_agent():
             for j in range(self.V.shape[1]):
                 v_old = self.V[i, j]
                 centre.reset((i, j))
-                print("pi(s) = {}, E[r] = {}".format(self.policy[i,j], self.expected_reward(
-                    centre, self.policy[i,j], self.V, arrival_distribution)))
+                if verbose:
+                    print("pi(s) = {}, E[r] = {}".format(self.policy[i,j], self.expected_reward(
+                        centre, self.policy[i,j], self.V, arrival_distribution)))
                 self.V[i, j] = self.expected_reward(
                     centre, self.policy[i,j], self.V, arrival_distribution
                 )
@@ -111,7 +112,7 @@ class bellman_agent():
                 if delta < error:
                     break
 
-    def policy_improvement(self, centre, arrival_distribution):
+    def policy_improvement(self, centre, arrival_distribution, verbose=False):
         is_policy_stable = True
         for i in range(self.V.shape[0]):
             for j in range(self.V.shape[1]):
@@ -119,8 +120,9 @@ class bellman_agent():
                 action_rewards = np.zeros((self.max_delivery+1))
                 centre.reset((i, j))
                 for delivery in self.actions:
-                    # print("a = {}, E[r] = {}".format(delivery, self.expected_reward(
-                    #     centre, delivery, self.V, arrival_distribution)))
+                    if verbose:
+                        print("a = {}, E[r] = {}".format(delivery, self.expected_reward(
+                            centre, delivery, self.V, arrival_distribution)))
                     action_rewards[delivery] = self.expected_reward(
                         centre, delivery, self.V, arrival_distribution
                     )
