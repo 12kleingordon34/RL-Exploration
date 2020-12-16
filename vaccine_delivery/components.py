@@ -115,6 +115,8 @@ class bellman_agent():
                 action_rewards = np.zeros((self.max_delivery+1))
                 centre.reset((i, j))
                 for delivery in self.actions:
+                    print("a = {}, E[r] = {}".format(delivery, self.expected_reward(
+                        centre, delivery, self.V, arrival_distribution)))
                     action_rewards[delivery] = self.expected_reward(
                         centre, delivery, self.V, arrival_distribution
                     )
