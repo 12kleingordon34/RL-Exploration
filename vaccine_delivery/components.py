@@ -56,10 +56,10 @@ class drug_centre():
 
 
     def get_state(self):
-        return (int(self.new_vaccines), int(self.old_vaccines))
+        return (int(self.old_vaccines), int(self.new_vaccines))
 
 
-    def reset(self, state):
+    def reset(self, state=(0,0)):
         self.old_vaccines = state[0]
         self.new_vaccines = state[1]
         self.last_step_treated = 0
@@ -84,9 +84,11 @@ class truncated_patient_arrival_distribution():
 class bellman_agent():
     def __init__(self, max_vax, max_delivery):
         self.V = np.zeros((max_vax+1, max_vax+1))
-        self.policy = np.ones((max_vax+1, max_vax+1))
+        self.policy = np.zeros((max_vax+1, max_vax+1))
         self.max_vax = max_vax
         self.max_delivery = max_delivery
+        self.is_policy_stable = False
+        self.actions = np.arange(0, max_delivery+1)
 
     def policy_evaluation(self, centre, arrival_distribution):
         """
@@ -102,7 +104,7 @@ class bellman_agent():
                     self.V[i, j] = self.expected_reward(
                         centre, self.policy[i,j], self.V, arrival_distribution
                     )
-                    delta = max([delta, np.abs(v - self.V[i, j])])
+                    delta = max([delta, np.abs(v_old - self.V[i, j])])
 
     def policy_improvement(self, centre, arrival_distribution):
         is_policy_stable = True
@@ -111,13 +113,14 @@ class bellman_agent():
                 old_policy = self.policy[i, j]
                 action_rewards = np.zeros((self.max_delivery+1))
                 centre.reset((i, j))
-                for delivery in range(self.max_delivery+1):
+                for delivery in self.actions:
                     action_rewards[delivery] = self.expected_reward(
-                        centre, old_policy, self.V, arrival_distribution
+                        centre, delivery, self.V, arrival_distribution
                     )
-                self.policy[i, j] = int(np.argmax(action_rewards))
+                self.policy[i, j] = self.actions[int(np.argmax(action_rewards))]
                 if is_policy_stable and (old_policy != self.policy[i, j]):
                     is_policy_stable = False
+        self.is_policy_stable = is_policy_stable
 
     @staticmethod
     def expected_reward(centre, action, V, dist):
@@ -135,5 +138,4 @@ class bellman_agent():
 
             V_s += prob * (reward + DISCOUNT * V[new_state[0], new_state[1]])
         return V_s
-
 
