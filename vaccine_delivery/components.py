@@ -102,7 +102,7 @@ class bellman_agent():
             for j in range(self.V.shape[1]):
                 v_old = self.V[i, j]
                 centre.reset((i, j))
-                print("pi(s) = {}, E[r] = {}".format(delivery, self.expected_reward(
+                print("pi(s) = {}, E[r] = {}".format(self.policy[i,j], self.expected_reward(
                     centre, self.policy[i,j], self.V, arrival_distribution)))
                 self.V[i, j] = self.expected_reward(
                     centre, self.policy[i,j], self.V, arrival_distribution
