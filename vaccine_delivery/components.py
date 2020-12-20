@@ -1,11 +1,17 @@
-import numpy as np
-from scipy.stats import poisson
 import logging
 
+import numpy as np
+from scipy.stats import poisson
 
-DISCOUNT = 0.6
 
-#test 3
+logger = logging.getLogger()
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+DISCOUNT = 0.5
+
 
 class drug_centre():
     def __init__(self, cost_vaccine, fee_vaccine, state=(0,0)):
@@ -69,6 +75,13 @@ class drug_centre():
         self.last_step_treated = 0
         self.last_step_expired = 0
 
+    def copy(self):
+        return drug_centre(
+            cost_vaccine=self.cost_vaccine,
+            fee_vaccine=self.fee_vaccine,
+            state=self.get_state()
+        )
+
 
 class truncated_patient_arrival_distribution():
     def __init__(self, max_arrivals, rate):
@@ -100,20 +113,24 @@ class bellman_agent():
         """
         error = 0.01
         delta = 1
+        num_policy_eval_iterations = 0
         while delta > error:
+            num_policy_eval_iterations += 1
             delta = 0
             for i in range(self.V.shape[0]):
                 for j in range(self.V.shape[1]):
                     v_old = self.V[i, j]
                     centre.reset((i, j))
                     if verbose:
-                        print("pi(s) = {}, E[r] = {}".format(self.policy[i,j], self.expected_reward(
+                        logging.debug("pi(s) = {}, E[r] = {}".format(self.policy[i,j], self.expected_reward(
                             centre, self.policy[i,j], self.V, arrival_distribution)))
                     self.V[i, j] = self.expected_reward(
                         centre, self.policy[i,j], self.V, arrival_distribution
                     )
                     delta = max([delta, np.abs(v_old - self.V[i, j])])
-                    logging.info(f'delta = {delta}')
+            logging.debug(
+                f'Num. Pol. Evals: {num_policy_eval_iterations} -- Delta: {np.round(delta, 4)}'
+            )
                 # if delta < error:
                 #     break
 
@@ -122,13 +139,13 @@ class bellman_agent():
         for i in range(self.V.shape[0]):
             for j in range(self.V.shape[1]):
                 if verbose:
-                    print("state = {},{}".format(i,j))
+                    logging.debug("state = {},{}".format(i,j))
                 old_policy = self.policy[i, j]
                 action_rewards = np.zeros((self.max_delivery+1))
                 centre.reset((i, j))
                 for delivery in self.actions:
                     if verbose:
-                        print("a = {}, E[r] = {}".format(delivery, self.expected_reward(
+                        logging.debug("a = {}, E[r] = {}".format(delivery, self.expected_reward(
                             centre, delivery, self.V, arrival_distribution)))
                     action_rewards[delivery] = self.expected_reward(
                         centre, delivery, self.V, arrival_distribution
@@ -142,11 +159,7 @@ class bellman_agent():
     def expected_reward(centre, action, V, dist):
         global DISCOUNT
 
-        temp_centre = drug_centre(
-            cost_vaccine=centre.cost_vaccine,
-            fee_vaccine=centre.fee_vaccine,
-            state=centre.get_state()
-        )
+        temp_centre = centre.copy()
         old_state = temp_centre.get_state()
         V_s = 0
         for patient_no in range(dist.max_arrivals+1):
