@@ -1,8 +1,16 @@
+import logging
+
 import numpy as np
 from scipy.stats import poisson
 
 
-DISCOUNT = 0.99
+logger = logging.getLogger()
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+DISCOUNT = 0.5
 
 
 class drug_centre():
@@ -19,7 +27,6 @@ class drug_centre():
         Updates state, and returns a loss corresponding
         to the expired vaccines.
         """
-        self.last_step_expired = self.old_vaccines
         self.old_vaccines = self.new_vaccines
         self.new_vaccines = load
 
@@ -47,6 +54,9 @@ class drug_centre():
             self.old_vaccines = 0
             self.last_step_treated = patients_treated
 
+        # at end of treatment count expired stock and bin it (set old to 0)
+        self.last_step_expired = self.old_vaccines
+        self.old_vaccines = 0
 
     def get_reward(self):
         return (
@@ -64,6 +74,13 @@ class drug_centre():
         self.new_vaccines = state[1]
         self.last_step_treated = 0
         self.last_step_expired = 0
+
+    def copy(self):
+        return drug_centre(
+            cost_vaccine=self.cost_vaccine,
+            fee_vaccine=self.fee_vaccine,
+            state=self.get_state()
+        )
 
 
 class truncated_patient_arrival_distribution():
@@ -90,30 +107,46 @@ class bellman_agent():
         self.is_policy_stable = False
         self.actions = np.arange(0, max_delivery+1)
 
-    def policy_evaluation(self, centre, arrival_distribution):
+    def policy_evaluation(self, centre, arrival_distribution, verbose=False):
         """
         i.e. Prediction
         """
         error = 0.01
-        delta = 0
+        delta = 1
+        num_policy_eval_iterations = 0
         while delta > error:
+            num_policy_eval_iterations += 1
+            delta = 0
             for i in range(self.V.shape[0]):
                 for j in range(self.V.shape[1]):
                     v_old = self.V[i, j]
                     centre.reset((i, j))
+                    if verbose:
+                        logging.debug("pi(s) = {}, E[r] = {}".format(self.policy[i,j], self.expected_reward(
+                            centre, self.policy[i,j], self.V, arrival_distribution)))
                     self.V[i, j] = self.expected_reward(
                         centre, self.policy[i,j], self.V, arrival_distribution
                     )
                     delta = max([delta, np.abs(v_old - self.V[i, j])])
+            logging.debug(
+                f'Num. Pol. Evals: {num_policy_eval_iterations} -- Delta: {np.round(delta, 4)}'
+            )
+                # if delta < error:
+                #     break
 
-    def policy_improvement(self, centre, arrival_distribution):
+    def policy_improvement(self, centre, arrival_distribution, verbose=False):
         is_policy_stable = True
         for i in range(self.V.shape[0]):
             for j in range(self.V.shape[1]):
+                if verbose:
+                    logging.debug("state = {},{}".format(i,j))
                 old_policy = self.policy[i, j]
                 action_rewards = np.zeros((self.max_delivery+1))
                 centre.reset((i, j))
                 for delivery in self.actions:
+                    if verbose:
+                        logging.debug("a = {}, E[r] = {}".format(delivery, self.expected_reward(
+                            centre, delivery, self.V, arrival_distribution)))
                     action_rewards[delivery] = self.expected_reward(
                         centre, delivery, self.V, arrival_distribution
                     )
@@ -126,16 +159,16 @@ class bellman_agent():
     def expected_reward(centre, action, V, dist):
         global DISCOUNT
 
-        old_state = centre.get_state()
+        temp_centre = centre.copy()
+        old_state = temp_centre.get_state()
         V_s = 0
         for patient_no in range(dist.max_arrivals+1):
-            centre.reset(old_state)
-            centre.delivery(action)
+            temp_centre.reset(old_state)
             prob = dist.call(patient_no)
-            centre.treat_patients(patient_no)
-            new_state = centre.get_state()
-            reward = centre.get_reward()
+            temp_centre.treat_patients(patient_no)
+            temp_centre.delivery(action)
+            new_state = temp_centre.get_state()
+            reward = temp_centre.get_reward()
 
             V_s += prob * (reward + DISCOUNT * V[new_state[0], new_state[1]])
         return V_s
-
