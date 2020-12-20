@@ -2,7 +2,7 @@
 
 A location to explore and exercise RL techiniques.
 
-## Ideas/To-Do
+### Ideas/To-Do
 
 ~1. Bellmann implementation of vaccine delivery for single site with infinite resources.~
 
