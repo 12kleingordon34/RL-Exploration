@@ -142,15 +142,16 @@ class bellman_agent():
     def expected_reward(centre, action, V, dist):
         global DISCOUNT
 
-        old_state = centre.get_state()
+        temp_centre = centre
+        old_state = temp_centre.get_state()
         V_s = 0
         for patient_no in range(dist.max_arrivals+1):
-            centre.reset(old_state)
+            temp_centre.reset(old_state)
             prob = dist.call(patient_no)
-            centre.treat_patients(patient_no)
-            centre.delivery(action)
-            new_state = centre.get_state()
-            reward = centre.get_reward()
+            temp_centre.treat_patients(patient_no)
+            temp_centre.delivery(action)
+            new_state = temp_centre.get_state()
+            reward = temp_centre.get_reward()
 
             V_s += prob * (reward + DISCOUNT * V[new_state[0], new_state[1]])
         return V_s
