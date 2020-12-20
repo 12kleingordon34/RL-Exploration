@@ -142,7 +142,11 @@ class bellman_agent():
     def expected_reward(centre, action, V, dist):
         global DISCOUNT
 
-        temp_centre = centre
+        temp_centre = drug_centre(
+            cost_vaccine=centre.cost_vaccine,
+            fee_vaccine=centre.fee_vaccine,
+            state=centre.get_state()
+        )
         old_state = temp_centre.get_state()
         V_s = 0
         for patient_no in range(dist.max_arrivals+1):
