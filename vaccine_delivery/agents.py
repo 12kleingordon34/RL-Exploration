@@ -10,8 +10,8 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-DISCOUNT = 0.8
-EPSILON = 0.1
+DISCOUNT = 0.5
+EPSILON = 0.25
 
 
 class bellman_agent():
