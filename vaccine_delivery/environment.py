@@ -58,6 +58,7 @@ class drug_centre():
         self.last_step_expired = self.old_vaccines
         self.old_vaccines = 0
 
+
     def get_reward(self):
         return (
             self.fee_vaccine * self.last_step_treated
