@@ -103,10 +103,11 @@ class tabular_model_free_agent():
         self.last_action = 0
         self.old_state = (0,0)
 
-    def step(self, reward, next_state, discount=DISCOUNT):
+    def step(self, reward, next_state, curr_iter, no_decay_iters, decay, discount=DISCOUNT):
         old_vaccines = next_state[0]; new_vaccines = next_state[1]
         next_action = self.behaviour_policy(
-            self.q[old_vaccines, new_vaccines, :]
+            self.q[old_vaccines, new_vaccines, :],
+            curr_iter, no_decay_iters, decay
         )
 
         # Return a policy vector over all action outcomes
@@ -129,4 +130,3 @@ class tabular_model_free_agent():
         self.last_action = next_action
         self.old_state = next_state
         return next_action
-
