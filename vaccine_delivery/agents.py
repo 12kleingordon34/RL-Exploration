@@ -104,22 +104,23 @@ class tabular_model_free_agent():
         self.old_state = (0,0)
 
     def step(self, reward, next_state, curr_iter, no_decay_iters, decay, discount=DISCOUNT):
-        old_vaccines = next_state[0]; new_vaccines = next_state[1]
+
         next_action = self.behaviour_policy(
-            self.q[old_vaccines, new_vaccines, :],
+            self.q[next_state[0], next_state[1], :],
             curr_iter, no_decay_iters, decay
         )
 
         # Return a policy vector over all action outcomes
         target_policy = self.target_policy(
-            self.q[old_vaccines, new_vaccines, :],
+            self.q[next_state[0], next_state[1], :],
             next_action
         )
 
-        delta = reward + discount * np.dot(
-            target_policy,
-            self.q[old_vaccines, new_vaccines, :]
-        ) - self.q[old_vaccines, new_vaccines, next_action]
+        predict = self.q[self.old_state[0], self.old_state[1], self.last_action]
+
+        target = reward + discount * np.dot(target_policy, self.q[next_state[0], next_state[1], :])
+
+        delta = target - predict
 
         self.q[
             self.old_state[0],
