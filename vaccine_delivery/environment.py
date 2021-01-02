@@ -14,9 +14,9 @@ DISCOUNT = 0.5
 
 
 class drug_centre():
-    def __init__(self, cost_vaccine, fee_vaccine, state=(0,0)):
-        self.cost_vaccine = cost_vaccine
-        self.fee_vaccine = fee_vaccine
+    def __init__(self, used_vac_reward, unused_vac_penalty, state=(0,0)):
+        self.unused_vac_penalty = unused_vac_penalty
+        self.used_vac_reward = used_vac_reward
         self.old_vaccines = state[0]
         self.new_vaccines = state[1]
         self.last_step_treated = 0
@@ -61,8 +61,8 @@ class drug_centre():
 
     def get_reward(self):
         return (
-            self.fee_vaccine * self.last_step_treated
-            - self.cost_vaccine * self.last_step_expired
+            self.used_vac_reward * self.last_step_treated
+            - self.unused_vac_penalty * self.last_step_expired
         )
 
 
@@ -78,8 +78,8 @@ class drug_centre():
 
     def copy(self):
         return drug_centre(
-            cost_vaccine=self.cost_vaccine,
-            fee_vaccine=self.fee_vaccine,
+            unused_vac_penalty=self.unused_vac_penalty,
+            used_vac_reward=self.used_vac_reward,
             state=self.get_state()
         )
 
@@ -97,5 +97,3 @@ class truncated_patient_arrival_distribution():
             return self.dist[num_arrivals]
         else:
             return 0
-
-
